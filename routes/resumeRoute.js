@@ -10,12 +10,18 @@ const storage = multer.diskStorage({
     },
   });
   
-    // const upload = multer({ storage: storage });
+    const upload = multer({ storage: storage });
 
     const resumeRoute = (req, res) => {
-        // upload.single('resume');
+        // Use upload.single middleware before the route to handle the file upload
+        upload.single('resume')(req, res, (err) => {
+            if (err) {
+                console.error('Error uploading file:', err);
+                return res.status(500).json({ error: 'Error uploading file' });
+            }
         console.log('Resume file uploaded:', req.file);
         res.status(200).send('Resume file uploaded successfully!');
+        });
     }
 
     export {resumeRoute};
