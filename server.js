@@ -6,6 +6,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
+import fs from 'fs';
 import 'dotenv/config';
 
 const app = express();
@@ -18,13 +19,14 @@ app.use(bodyParser.json());
 // app.get('/', (req, res) => {
 //     res.send(req.body);
 // });
-
+let resumeName;
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, 'uploads/'); // Save files to the 'uploads' directory
     },
     filename: (req, file, cb) => {
       const fileName = `${Date.now()}-${file.originalname}`;
+      resumeName = fileName;
       cb(null, fileName);
     },
   });
@@ -53,12 +55,19 @@ app.post('/',(req,res) => {
                    I believe my skills and experience align well with the requirements of the role.
                    I have a background in Java and Spring Boot. I have attached my resume for your consideration.
                    Thank you for considering my application. I look forward to the opportunity to speak with you.`;
+// Get list of uploaded resumes
+    const resumesPath = './uploads/';
+    const attachments = fs.readdirSync(resumesPath).map((filename) => ({
+    filename,
+    path: `${resumesPath}${filename}`,
+    }));
 
   let mailOptions = {
     from: process.env.SMTP_MAIL,
     to: email_of_employees,
     subject: company_name,
     text: emailBody,
+    attachments,
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
