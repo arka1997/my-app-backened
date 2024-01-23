@@ -24,7 +24,7 @@ app.post('/uploadResume', (req, res) => {
     
 });
 
-app.post('/',(req,res) => {
+app.post('/excelUpload',(req,res) => {
     emailRoute(req,res);
 })
 
