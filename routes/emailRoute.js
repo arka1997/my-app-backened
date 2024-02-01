@@ -4,15 +4,17 @@ import fs from 'fs';
 
 
 const emailRoute = (req, res) => {
-  const { name, password, sender_mail, yoe, currentCompany, data } = req.body; // Here we have all excel data & password
-  const transporter = nodemailer.createTransport({
+  const { password, senderMail, excelData } = req.body; // Here we have all excel data & password
+  console.log(req.body);
+    const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
     secure: false,
     auth: {
-      user: sender_mail,
+      user: senderMail,
       pass: password,
     },
+    connectionTimeout: 10000,
   });
   transporter.verify(function (error, success) {
     if (error) {
@@ -28,27 +30,27 @@ const emailRoute = (req, res) => {
     path: `${resumesPath}${filename}`,
   }));
 
-  if( data && data.length > 0){// Now we traverse, and go to every data set/rows, and store them
-    mailParams(data, attachments, transporter, name, sender_mail, yoe, currentCompany);
+  if( excelData && excelData.length > 0){// Now we traverse, and go to every data set/rows, and store them
+    mailParams(excelData, attachments, transporter, senderMail, req.body);
+    // deleteAttachments(attachments); // Delete attachments after sending emails
   }
-  
-    // deleteAttachments(attachments);// Delete all the attachments from ./uploads folder
 };
-const mailParams = (data, attachments, transporter, name, sender_mail, yoe, currentCompany) => {
+const mailParams = (excelData, attachments, transporter, senderMail, req) => {
 
-  data.forEach((individualEmailData) => {
+  const { name, yoe, currentCompany, techStack } = req;
+  excelData.forEach((individualEmailData) => {
   const { company_name, email_of_employees, role } = individualEmailData;
 
   let emailBody = `Hello, my name is ${name}. I hope this message finds you well.
                     I am writing to express my interest in the ${role} position at ${company_name}.
                     I believe my skills and experience align well with the requirements of the role.
                     Currently I am working in ${currentCompany} with ${yoe} Years of experience.
-                    I have a background in Java and Spring Boot. I have attached my resume for your consideration.
+                    I have a background in ${techStack} & many more. I have attached my resume for your consideration.
                     Thank you for considering my application. I look forward to the opportunity to speak with you.`;
 
-
+  // let allSubjects = [name,company_name,role,yoe];
   let mailOptions = {
-    from: sender_mail,
+    from: senderMail,
     to: email_of_employees,
     subject: company_name,
     text: emailBody,
@@ -67,19 +69,15 @@ const mailParams = (data, attachments, transporter, name, sender_mail, yoe, curr
 
 // Remove uploaded resumes after successfully sending the email
 const deleteAttachments = (attachments) => {
-    if (attachments.length > 0) {
-        attachments.forEach((attachment) => {
-          fs.unlink(attachment.path, (err) => {
-            if (err) {
-              console.error(`Error deleting file: ${attachment.filename}`);
-            } else {
-              console.log(`File deleted: ${attachment.filename}`);
-            }
-          });
-        });
-      } else {
-        console.log("No files to delete.");
-      }
+  if (attachments.length > 0) {
+    attachments.forEach((attachment) => {
+      // fs.unlink()
+      fs.unlinkSync(attachment.path); // Use fs.unlinkSync to remove files synchronously, a smail may need time to send, so the delete operation will wait, until all mails are sent, then synchronously it will delete after previous operations are done.
+      console.log(`File deleted: ${attachment.filename}`);
+    });
+  } else {
+    console.log("No files to delete.");
+  }
 }
 
 export { emailRoute };
