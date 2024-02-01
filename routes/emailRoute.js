@@ -48,11 +48,11 @@ const mailParams = (excelData, attachments, transporter, senderMail, req) => {
                     I have a background in ${techStack} & many more. I have attached my resume for your consideration.
                     Thank you for considering my application. I look forward to the opportunity to speak with you.`;
 
-  // let allSubjects = [name,company_name,role,yoe];
+  let allSubjects = [name,company_name,role,yoe];
   let mailOptions = {
     from: senderMail,
     to: email_of_employees,
-    subject: company_name,
+    subject: allSubjects.join(' || ') + ' ' + ' YOE',
     text: emailBody,
     attachments,
   };
