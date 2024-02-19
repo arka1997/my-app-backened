@@ -31,5 +31,5 @@ app.post('/excelUpload',(req,res) => {
 const port = process.env.PORT || 3001;// Either get the Environment variable in production level Server, or run the default port
 // Now listening to the new port created
 app.listen(port, () => {
-    console.log(`Serve at http://localhost:${port}`);
+    console.log(`Serve at https://expressflash.netlify.app/:${port}`);
 })

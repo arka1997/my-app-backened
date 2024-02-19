@@ -3,8 +3,9 @@ import fs from 'fs';
 
 
 
-const emailRoute = (req, res) => {
-  const { password, senderMail, excelData } = req.body; // Here we have all excel data & password
+const emailRoute = async (req, res) => {
+  try {
+    const { password, senderMail, excelData } = req.body; // Here we have all excel data & password
   console.log(req.body);
     const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -31,14 +32,31 @@ const emailRoute = (req, res) => {
   }));
 
   if( excelData && excelData.length > 0){// Now we traverse, and go to every data set/rows, and store them
-    mailParams(excelData, attachments, transporter, senderMail, req.body);
-    // deleteAttachments(attachments); // Delete attachments after sending emails
+      const promise = mailParams(excelData, attachments, transporter, senderMail, req.body);
+      promise.then(() => {
+        if(attachments){
+          return deleteAttachments(attachments); // Delete attachments after sending emails
+        }
+      })
+      .then(() => {
+        res.status(200).send("Emails sent successfully!");
+      })
+      .catch((error) => {
+        console.error("Error sending emails:", error);
+        res.status(500).send("Internal Server Error");
+      });
+  } else {
+    res.status(400).send("No Excel data provided");
   }
+} catch (error) {
+  console.error("Unhandled error:", error);
+  res.status(500).send("Internal Server Error");
+}
 };
-const mailParams = (excelData, attachments, transporter, senderMail, req) => {
-
+const mailParams = async (excelData, attachments, transporter, senderMail, req) => {
+  
   const { name, yoe, currentCompany, techStack } = req;
-  excelData.forEach((individualEmailData) => {
+  const sendMailPromises = excelData.map((individualEmailData) => {
   const { company_name, email_of_employees, role } = individualEmailData;
 
   let emailBody = `Hello, my name is ${name}. I hope this message finds you well.
@@ -56,28 +74,37 @@ const mailParams = (excelData, attachments, transporter, senderMail, req) => {
     text: emailBody,
     attachments,
   };
-
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent successfully!");
-    }
+  return new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+        reject(error);
+      } else {
+        console.log("Email sent successfully!");
+        resolve(info);
+      }
+    });
   });
 })
+  // Wait for all emails to be sent before resolving
+  await Promise.all(sendMailPromises);
 };
 
-// Remove uploaded resumes after successfully sending the email
-const deleteAttachments = (attachments) => {
+const deleteAttachments = async (attachments) => {
   if (attachments.length > 0) {
-    attachments.forEach((attachment) => {
-      // fs.unlink()
-      fs.unlinkSync(attachment.path); // Use fs.unlinkSync to remove files synchronously, a smail may need time to send, so the delete operation will wait, until all mails are sent, then synchronously it will delete after previous operations are done.
-      console.log(`File deleted: ${attachment.filename}`);
-    });
+    try {
+      await Promise.all(attachments.map(async (attachment) => {
+        await fs.promises.unlink(attachment.path);
+        console.log(`File deleted: ${attachment.filename}`);
+      }));
+    } catch (error) {
+      console.error("Error deleting attachments:", error);
+      throw error;
+    }
   } else {
     console.log("No files to delete.");
   }
-}
+};
+
 
 export { emailRoute };
