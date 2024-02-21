@@ -23,7 +23,6 @@ app.get('/', (req, res) => {
 
 app.post('/uploadResume', (req, res) => {
     resumeRoute(req, res); 
-    res.sendStatus(200);
 });
 
 app.post('/excelUpload',(req,res) => {
@@ -34,5 +33,5 @@ app.post('/excelUpload',(req,res) => {
 const port = process.env.PORT || 3001;// Either get the Environment variable in production level Server, or run the default port
 // Now listening to the new port created
 app.listen(port, () => {
-    console.log(`Serve at https://expressflash.onrender.com/:${port}`);
+    console.log(`Serve at http://localhost:${port}`);
 })

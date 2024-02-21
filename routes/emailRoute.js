@@ -4,9 +4,9 @@ import fs from 'fs';
 
 
 const emailRoute = async (req, res) => {
+  console.log(req.body);
   try {
     const { password, senderMail, excelData } = req.body; // Here we have all excel data & password
-  console.log(req.body);
     const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
@@ -58,12 +58,13 @@ const mailParams = async (excelData, attachments, transporter, senderMail, req) 
   const { name, yoe, currentCompany, techStack } = req;
   const sendMailPromises = excelData.map((individualEmailData) => {
   const { company_name, email_of_employees, role } = individualEmailData;
-
+  const formattedTechStacks = techStack.join(', ');
+  
   let emailBody = `Hello, my name is ${name}. I hope this message finds you well.
                     I am writing to express my interest in the ${role} position at ${company_name}.
                     I believe my skills and experience align well with the requirements of the role.
                     Currently I am working in ${currentCompany} with ${yoe} Years of experience.
-                    I have a background in ${techStack} & many more. I have attached my resume for your consideration.
+                    with profiecient experience in ${formattedTechStacks} & many more. I have attached my resume for your consideration.
                     Thank you for considering my application. I look forward to the opportunity to speak with you.`;
 
   let allSubjects = [name,company_name,role,yoe];
