@@ -65,7 +65,8 @@ const mailParams = async (excelData, attachments, transporter, senderMail, req) 
                     I believe my skills and experience align well with the requirements of the role.
                     Currently I am working in ${currentCompany} with ${yoe} Years of experience.
                     with profiecient experience in ${formattedTechStacks} & many more. I have attached my resume for your consideration.
-                    Thank you for considering my application. I look forward to the opportunity to speak with you.`;
+                    Thank you for considering my application. I look forward to the opportunity to speak with you.
+                    LinkedIn Profile: https://www.linkedin.com/in/debanjan-sarkar-820676183/ `;
 
   let allSubjects = [name,company_name,role,yoe];
   let mailOptions = {
