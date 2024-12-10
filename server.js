@@ -26,6 +26,7 @@ app.post('/uploadResume', (req, res) => {
 });
 
 app.post('/excelUpload',(req,res) => {
+    console.log("fgf"+req.body)
     emailRoute(req,res);
     res.sendStatus(200);
 })

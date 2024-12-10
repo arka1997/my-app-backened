@@ -4,22 +4,25 @@ import fs from 'fs';
 
 
 const emailRoute = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   try {
     const { password, senderMail, excelData } = req.body; // Here we have all excel data & password
     const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: false,
-    auth: {
-      user: senderMail,
-      pass: password,
-    },
-    connectionTimeout: 10000,
-  });
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT, 10), // Ensure port is an integer
+      secure: process.env.SMTP_PORT === "465", // Use secure for port 465
+      auth: {
+        user: senderMail,
+        pass: password,
+      },
+      connectionTimeout: 20000, // Increase timeout for slower connections
+      requireTLS: true, // Enforce TLS for port 587
+    });
+    
   transporter.verify(function (error, success) {
     if (error) {
       console.log('SMTP Server connection error:', error);
+      return res.status(500).send("SMTP Server error: " + error.message); // Send error response
     } else {
       console.log('SMTP Server connection is ready',success);
     }
@@ -31,23 +34,25 @@ const emailRoute = async (req, res) => {
     path: `${resumesPath}${filename}`,
   }));
 
-  if( excelData && excelData.length > 0){// Now we traverse, and go to every data set/rows, and store them
-      const promise = mailParams(excelData, attachments, transporter, senderMail, req.body);
-      promise.then(() => {
-        if(attachments){
-          return deleteAttachments(attachments); // Delete attachments after sending emails
-        }
-      })
-      .then(() => {
-        res.status(200).send("Emails sent successfully!");
-      })
-      .catch((error) => {
-        console.error("Error sending emails:", error);
-        res.status(500).send("Internal Server Error");
-      });
+  if (excelData && excelData.length > 0) {
+    try {
+      await mailParams(excelData, attachments, transporter, senderMail, req.body);
+      if (attachments) {
+        await deleteAttachments(attachments);
+      }
+      res.status(200).send("Emails sent successfully!");
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      if (!res.headersSent) { // Prevent double response
+        res.status(500).send("Error sending emails: " + error.message);
+      }
+    }
   } else {
-    res.status(400).send("No Excel data provided");
+    if (!res.headersSent) { // Prevent double response
+      res.status(400).send("No Excel data provided");
+    }
   }
+  
 } catch (error) {
   console.error("Unhandled error:", error);
   res.status(500).send("Internal Server Error");
@@ -57,23 +62,24 @@ const mailParams = async (excelData, attachments, transporter, senderMail, req) 
   
   const { name, yoe, currentCompany, techStack } = req;
   const sendMailPromises = excelData.map((individualEmailData) => {
-  const { company_name, email_of_employees, role } = individualEmailData;
+  const { company_name, email, role } = individualEmailData;
   const formattedTechStacks = techStack.join(', ');
-  
-  let emailBody = `Hello, my name is ${name}. I hope this message finds you well.
-                    I am writing to express my interest in the ${role} position at ${company_name}.
-                    I believe my skills and experience align well with the requirements of the role.
-                    Currently I am working in ${currentCompany} with ${yoe} Years of experience.
-                    with profiecient experience in ${formattedTechStacks} & many more. I have attached my resume for your consideration.
-                    Thank you for considering my application. I look forward to the opportunity to speak with you.
-                    LinkedIn Profile: https://www.linkedin.com/in/debanjan-sarkar-820676183/ `;
 
-  let allSubjects = [name,company_name,role,yoe];
+  const emailBodyHTML = `
+                    <p>Hello,</p>
+                    <p>I am writing to express my interest in the <b>${role}</b> position at <b>${company_name}</b>.</p>
+                    <p>Currently, I am working at <b>${currentCompany}</b> with <b>${yoe}</b> years of experience.</p>
+                    <p>My expertise includes <b>${formattedTechStacks}</b> and many more. I have attached my resume for your consideration.</p>
+                    <p>Thank you for your time and consideration.</p>
+                    <p>Best regards,</p>
+                    <p>${name}</p>
+                    <p>LinkedIn Profile: <a href="https://www.linkedin.com/in/debanjan-sarkar-820676183/">Click Here</a></p>
+                  `;
   let mailOptions = {
     from: senderMail,
-    to: email_of_employees,
-    subject: allSubjects.join(' || ') + ' ' + ' YOE',
-    text: emailBody,
+    to: email,
+    subject: `${name} || ${company_name} ||${yoe} YOE`,
+    html: emailBodyHTML,
     attachments,
   };
   return new Promise((resolve, reject) => {

@@ -20,6 +20,7 @@ import fs from 'fs';
     const resumeRoute = (req, res) => {
         // Use upload.single middleware before the route to handle the file upload
         upload.single('resume')(req, res, (err) => {
+            console.log("ggg",req.body)
             if (err) {
                 console.error('Error uploading file:', err);
                 return res.status(500).json({ error: 'Error uploading file' });
